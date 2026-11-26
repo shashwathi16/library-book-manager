@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Add Books | Library Book Manager</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@600;700&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
+</head>
+<body>
+  <div id="hdr"></div>
+  <main class="container py-4">
+    <div class="row g-4">
+      <div class="col-lg-5"><div class="panel">
+        <h2 class="panel-title"><i class="bi bi-plus-circle me-2"></i>Add one book</h2>
+        <form id="f" novalidate>
+          <div class="mb-3"><label class="form-label" for="id">Book ID</label><input class="form-control" id="id" maxlength="20" placeholder="e.g. B201"><div class="invalid-feedback" id="idE">Enter a book ID.</div></div>
+          <div class="mb-3"><label class="form-label" for="ti">Title</label><input class="form-control" id="ti" maxlength="100"><div class="invalid-feedback">Enter the book title.</div></div>
+          <div class="mb-3"><label class="form-label" for="au">Author</label><input class="form-control" id="au" maxlength="80"><div class="invalid-feedback">Enter the author's name.</div></div>
+          <div class="mb-3"><label class="form-label" for="ca">Category</label><select class="form-select" id="ca"></select></div>
+          <button class="btn btn-brand w-100">Add book</button>
+        </form>
+        <div class="small mt-3" id="msg" aria-live="polite"></div>
+      </div></div>
+      <div class="col-lg-7"><div class="panel mb-4">
+        <h2 class="panel-title"><i class="bi bi-files me-2"></i>Add many books at once</h2>
+        <p class="small text-muted">One book per line: <code>ID, Title, Author, Category</code> (category is optional).</p>
+        <label class="visually-hidden" for="bulk">Books to add</label>
+        <textarea class="form-control mb-2" id="bulk" rows="5" placeholder="B301, Head First HTML, Elisabeth Robson, Web Development&#10;B302, Cosmos, Carl Sagan, Science"></textarea>
+        <button class="btn btn-brand" id="bulkBtn">Add all</button>
+      </div>
+      <div class="panel"><h2 class="panel-title"><i class="bi bi-clock-history me-2"></i>Recently added</h2><ul class="activity" id="recent"></ul></div></div>
+    </div>
+  </main>
+  <footer class="container pb-4 small text-muted">Classroom prototype. Sample data is fictional and is saved in this browser only.</footer>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="common.js"></script>
+  <script>
+boot("add");
+
+$("ca").innerHTML=CATS.map(c=>`<option>${c}</option>`).join("");
+const has=id=>books.some(b=>b.id.toLowerCase()===id.toLowerCase());
+function recent(){$("recent").innerHTML=books.slice(0,6).map(b=>`<li><span class="dot"><i class="bi bi-book"></i></span><div>${esc(b.title)}<time>${esc(b.id)} · ${esc(b.author)}</time></div></li>`).join("")}
+$("f").onsubmit=e=>{e.preventDefault();const id=$("id").value.trim(),t=$("ti").value.trim(),a=$("au").value.trim();let ok=true;
+ ["id","ti","au"].forEach(x=>$(x).classList.remove("is-invalid"));
+ if(!id){$("idE").textContent="Enter a book ID.";$("id").classList.add("is-invalid");ok=false}else if(has(id)){$("idE").textContent=`ID "${id}" is already used. Choose a different ID.`;$("id").classList.add("is-invalid");ok=false}
+ if(!t){$("ti").classList.add("is-invalid");ok=false}if(!a){$("au").classList.add("is-invalid");ok=false}if(!ok)return;
+ books.unshift(mk(id,t,a,$("ca").value));save();logA("add",`Added "${t}" (${id})`);e.target.reset();$("id").focus();
+ $("msg").innerHTML=`<span class="text-success"><i class="bi bi-check-circle"></i> Added "${esc(t)}". Add another, or <a href="shelves.html">see it on the shelves</a>.</span>`;recent()};
+$("bulkBtn").onclick=()=>{let n=0,bad=[];$("bulk").value.split("\n").map(l=>l.trim()).filter(Boolean).forEach(l=>{const p=l.split(",").map(x=>x.trim());
+ if(p.length<3||!p[0]||!p[1]||!p[2]||has(p[0])){bad.push(p[0]||l);return}
+ books.unshift(mk(p[0],p[1],p[2],CATS.includes(p[3])?p[3]:"Other"));n++});
+ if(n){save();logA("add",`Added ${n} books in bulk`)}recent();
+ $("msg").innerHTML=`<span class="${n?"text-success":"text-danger"}">${n} book(s) added.</span>`+(bad.length?` <span class="text-danger">Skipped (missing field or duplicate ID): ${bad.map(esc).join(", ")}</span>`:"");
+ if(!bad.length)$("bulk").value=""};
+recent();
+  </script>
+</body>
+</html>

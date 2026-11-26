@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shelves | Library Book Manager</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@600;700&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
+</head>
+<body>
+  <div id="hdr"></div>
+  <main class="container py-4">
+    <div class="row g-2 mb-3">
+      <div class="col-md-7"><label for="q" class="visually-hidden">Search shelves</label><div class="input-group"><span class="input-group-text"><i class="bi bi-search"></i></span><input id="q" type="search" class="form-control" placeholder="Search title or author: matching books stay bright"></div></div>
+      <div class="col-md-5"><label for="st" class="visually-hidden">Filter</label><select id="st" class="form-select"><option value="all">All books</option><option value="available">Available only</option><option value="issued">Issued only</option></select></div>
+    </div>
+    <p class="small text-muted mb-3"><i class="bi bi-hand-index me-1"></i>Click a book spine to open it. Faded books are issued. Spine colour shows the category.</p>
+    <div id="cases"></div>
+  </main>
+  <footer class="container pb-4 small text-muted">Classroom prototype. Sample data is fictional and is saved in this browser only.</footer>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="common.js"></script>
+  <script>
+boot("shelves");
+
+function draw(){const q=$("q").value.trim().toLowerCase(),st=$("st").value;
+ $("cases").innerHTML=CATS.map(c=>caseHTML(c,books.filter(b=>b.category===c&&(st==="all"||(st==="issued")===b.issued)))).join("");
+ if(q)document.querySelectorAll(".spine").forEach(s=>{const b=books.find(x=>x.id===s.dataset.id);s.classList.toggle("dim",!(b.title+" "+b.author).toLowerCase().includes(q))});}
+$("q").oninput=draw;$("st").onchange=draw;window.onChange=draw;draw();
+  </script>
+</body>
+</html>

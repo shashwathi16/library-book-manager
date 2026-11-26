@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Library Book Manager</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@600;700&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
+</head>
+<body>
+
+  <!-- ===== Header ===== -->
+  <header class="hero">
+    <div class="container hero-inner">
+      <div class="brand">
+        <span class="brand-icon" aria-hidden="true"><i class="bi bi-book-half"></i></span>
+        <div>
+          <h1 class="site-title">Front Desk Library</h1>
+          <p class="site-sub mb-0">Add books, find them, and track who has them.</p>
+        </div>
+      </div>
+      <div class="hero-actions">
+        <button type="button" class="btn btn-light btn-sm" id="exportBtn"><i class="bi bi-download me-1"></i>Export CSV</button>
+        <div class="dropdown">
+          <button type="button" class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-three-dots me-1"></i>More</button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><button type="button" class="dropdown-item" id="printBtn"><i class="bi bi-printer me-2"></i>Print catalogue</button></li>
+            <li><button type="button" class="dropdown-item" id="backupBtn"><i class="bi bi-file-earmark-arrow-down me-2"></i>Backup (JSON)</button></li>
+            <li><button type="button" class="dropdown-item" id="restoreBtn"><i class="bi bi-file-earmark-arrow-up me-2"></i>Restore (JSON)</button></li>
+          </ul>
+        </div>
+        <input type="file" id="restoreFile" accept="application/json,.json" class="d-none" aria-label="Choose a backup file">
+        <button type="button" class="btn btn-outline-light btn-sm" id="themeBtn" aria-label="Switch between light and dark mode" title="Light / dark mode"><i class="bi bi-moon-stars"></i></button>
+      </div>
+    </div>
+    <div class="container"><nav class="topnav"><a href="index.html">Home</a><a href="shelves.html">Shelves</a><a href="catalogue.html" class="active">Catalogue</a><a href="add.html">Add Books</a><a href="issued.html">Issued &amp; Returns</a></nav></div>
+  </header>
+
+  <main class="container py-4">
+
+    <!-- ===== Summary ===== -->
+    <section class="row g-3 mb-3" aria-label="Library summary">
+      <div class="col-6 col-lg-3">
+        <div class="stat"><span class="stat-icon ic-total"><i class="bi bi-collection"></i></span>
+          <div><span class="stat-num" id="statTotal">0</span><span class="stat-label">Total books</span></div></div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="stat"><span class="stat-icon ic-avail"><i class="bi bi-check2-circle"></i></span>
+          <div><span class="stat-num" id="statAvailable">0</span><span class="stat-label">Available</span></div></div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="stat"><span class="stat-icon ic-issued"><i class="bi bi-person-check"></i></span>
+          <div><span class="stat-num" id="statIssued">0</span><span class="stat-label">Issued</span></div></div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="stat"><span class="stat-icon ic-over"><i class="bi bi-alarm"></i></span>
+          <div><span class="stat-num" id="statOverdue">0</span><span class="stat-label">Overdue</span></div></div>
+      </div>
+    </section>
+
+    <div class="avail-wrap mb-3">
+      <div class="d-flex justify-content-between small mb-1">
+        <span>Shelf availability</span><span id="availText">0% available</span>
+      </div>
+      <div class="progress" role="progressbar" aria-label="Percentage of books available" aria-valuemin="0" aria-valuemax="100" id="availBar">
+        <div class="progress-bar" id="availFill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="row g-4">
+
+      <!-- ===== Left column ===== -->
+      <aside class="col-lg-4">
+        <div class="panel mb-4">
+          <h2 class="panel-title"><i class="bi bi-plus-circle me-2"></i>Add a book</h2>
+          <form id="bookForm" novalidate>
+            <div class="mb-3">
+              <label for="bookId" class="form-label">Book ID</label>
+              <input type="text" class="form-control" id="bookId" placeholder="e.g. B201" maxlength="20" required>
+              <div class="invalid-feedback" id="bookIdError">Enter a book ID.</div>
+            </div>
+            <div class="mb-3">
+              <label for="title" class="form-label">Title</label>
+              <input type="text" class="form-control" id="title" placeholder="e.g. Clean Code" maxlength="100" required>
+              <div class="invalid-feedback">Enter the book title.</div>
+            </div>
+            <div class="mb-3">
+              <label for="author" class="form-label">Author</label>
+              <input type="text" class="form-control" id="author" placeholder="e.g. Robert C. Martin" maxlength="80" required>
+              <div class="invalid-feedback">Enter the author's name.</div>
+            </div>
+            <div class="mb-3">
+              <label for="category" class="form-label">Category</label>
+              <select class="form-select" id="category"></select>
+            </div>
+            <button type="submit" class="btn btn-brand w-100"><i class="bi bi-plus-lg me-1"></i>Add book</button>
+          </form>
+          <button type="button" class="btn btn-link btn-sm text-muted px-0 mt-3" id="resetBtn"><i class="bi bi-arrow-counterclockwise me-1"></i>Reset to sample books</button>
+        </div>
+
+        <div class="panel mb-4">
+          <h2 class="panel-title"><i class="bi bi-bar-chart-line me-2"></i>Books by category</h2>
+          <div id="catChart" class="cat-chart"></div>
+          <p class="small text-muted mt-2 mb-0">Tap a bar to filter the catalogue.</p>
+        </div>
+
+        <div class="panel">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h2 class="panel-title mb-0"><i class="bi bi-clock-history me-2"></i>Recent activity</h2>
+            <button type="button" class="btn btn-link btn-sm text-muted p-0" id="clearLogBtn">Clear</button>
+          </div>
+          <ul class="activity" id="activityList"></ul>
+        </div>
+      </aside>
+
+      <!-- ===== Catalogue ===== -->
+      <section class="col-lg-8" aria-label="Book catalogue">
+        <div class="panel">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <h2 class="panel-title mb-0"><i class="bi bi-journal-bookmark me-2"></i>Catalogue</h2>
+            <div class="btn-group btn-group-sm" role="group" aria-label="Choose view">
+              <button type="button" class="btn btn-outline-secondary" id="viewTable" aria-pressed="true"><i class="bi bi-list-ul me-1"></i>Table</button>
+              <button type="button" class="btn btn-outline-secondary" id="viewCards" aria-pressed="false"><i class="bi bi-grid-3x3-gap me-1"></i>Cards</button>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-2">
+            <div class="col-12 col-md-6">
+              <label for="search" class="visually-hidden">Search books</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="search" class="form-control" id="search" placeholder="Search title, author, ID (press / )">
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <label for="catFilter" class="visually-hidden">Filter by category</label>
+              <select class="form-select" id="catFilter"></select>
+            </div>
+            <div class="col-6 col-md-3">
+              <label for="statusFilter" class="visually-hidden">Filter by availability</label>
+              <select class="form-select" id="statusFilter">
+                <option value="all">All status</option>
+                <option value="available">Available</option>
+                <option value="issued">Issued</option>
+                <option value="overdue">Overdue</option>
+                <option value="starred">Starred</option>
+              </select>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <span class="small text-muted" id="resultCount" aria-live="polite"></span>
+            <div class="d-flex align-items-center gap-2">
+              <label for="sortBy" class="small text-muted mb-0">Sort by</label>
+              <select class="form-select form-select-sm w-auto" id="sortBy">
+                <option value="added">Recently added</option>
+                <option value="title">Title (A–Z)</option>
+                <option value="author">Author (A–Z)</option>
+                <option value="id">Book ID</option>
+                <option value="status">Available first</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Table view -->
+          <div class="table-responsive" id="tableWrap">
+            <table class="table align-middle book-table">
+              <thead>
+                <tr>
+                  <th scope="col">ID</th>
+                  <th scope="col">Title</th>
+                  <th scope="col">Author</th>
+                  <th scope="col">Category</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="bookList"></tbody>
+            </table>
+          </div>
+
+          <!-- Card view -->
+          <div class="row g-3 d-none" id="cardWrap"></div>
+
+          <div id="emptyState" class="empty-state d-none"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="container pb-4 small text-muted">
+    Classroom prototype. Sample data is fictional and is saved in this browser only.
+  </footer>
+
+  <!-- ===== Issue modal ===== -->
+  <div class="modal fade" id="issueModal" tabindex="-1" aria-labelledby="issueModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <form class="modal-content" id="issueForm" novalidate>
+        <div class="modal-header">
+          <h2 class="modal-title fs-5" id="issueModalLabel"><i class="bi bi-box-arrow-right me-2"></i>Issue book</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-3 fw-semibold" id="issueBookInfo"></p>
+          <div class="mb-3">
+            <label for="borrower" class="form-label">Borrower name</label>
+            <input type="text" class="form-control" id="borrower" maxlength="60" list="borrowerList" autocomplete="off" required>
+            <datalist id="borrowerList"></datalist>
+            <div class="invalid-feedback">Enter the borrower's name.</div>
+          </div>
+          <div>
+            <label for="dueDate" class="form-label">Due date</label>
+            <input type="date" class="form-control" id="dueDate" required>
+            <div class="invalid-feedback">Choose a due date that is today or later.</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-brand">Issue book</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== Edit modal ===== -->
+  <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <form class="modal-content" id="editForm" novalidate>
+        <div class="modal-header">
+          <h2 class="modal-title fs-5" id="editModalLabel"><i class="bi bi-pencil-square me-2"></i>Edit book</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="editId" class="form-label">Book ID</label>
+            <input type="text" class="form-control" id="editId" readonly>
+          </div>
+          <div class="mb-3">
+            <label for="editTitle" class="form-label">Title</label>
+            <input type="text" class="form-control" id="editTitle" maxlength="100" required>
+            <div class="invalid-feedback">Enter the book title.</div>
+          </div>
+          <div class="mb-3">
+            <label for="editAuthor" class="form-label">Author</label>
+            <input type="text" class="form-control" id="editAuthor" maxlength="80" required>
+            <div class="invalid-feedback">Enter the author's name.</div>
+          </div>
+          <div>
+            <label for="editCategory" class="form-label">Category</label>
+            <select class="form-select" id="editCategory"></select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-brand">Save changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== Details modal ===== -->
+  <div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title fs-5" id="detailsTitle"><i class="bi bi-info-circle me-2"></i>Book details</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="detailsBody"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Confirm modal ===== -->
+  <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title fs-5" id="confirmTitle">Are you sure?</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="confirmMsg"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger" id="confirmOk">Yes, continue</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Toasts ===== -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastArea" aria-live="polite"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
